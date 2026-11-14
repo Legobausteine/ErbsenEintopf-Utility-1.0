@@ -1,0 +1,48 @@
+name: Crossair-EXE bauen
+
+# Manuell starten: Reiter "Actions" > "Crossair-EXE bauen" > "Run workflow".
+# Die fertige EXE wird danach automatisch im Hauptordner des Repos abgelegt.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: PyInstaller installieren
+        run: pip install pyinstaller
+
+      - name: EXE bauen
+        run: >
+          pyinstaller --onefile --noconsole --clean
+          --icon crossair/icon.ico
+          --add-data "crossair/icon.ico;."
+          --name ErbsenEinntopf-Crossair
+          crossair/erbseneinntopf_crossair.py
+
+      - name: EXE ins Repo legen
+        run: |
+          cp dist/ErbsenEinntopf-Crossair.exe ./ErbsenEinntopf-Crossair.exe
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ErbsenEinntopf-Crossair.exe
+          git commit -m "Crossair-EXE gebaut" || echo "Nichts zu committen"
+          git push
+
+      - name: Als Artefakt speichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: ErbsenEinntopf-Crossair
+          path: dist/ErbsenEinntopf-Crossair.exe
