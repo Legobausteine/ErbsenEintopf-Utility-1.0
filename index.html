@@ -68,7 +68,11 @@ body::before{
 .tagrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:2px}
 .tag{font:600 11.5px var(--display);letter-spacing:.02em;color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:2px}
 
-.links{width:100%;display:flex;flex-direction:column;gap:12px}
+.links{width:100%;display:flex;flex-direction:column;gap:28px}
+.cat{width:100%;display:flex;flex-direction:column;gap:12px}
+.cat h2{margin:0;display:flex;align-items:center;gap:10px;font:700 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.cat h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.cat .note{margin:0;font-size:12.5px;line-height:1.5;color:var(--faint)}
 
 .link{
   position:relative;display:flex;align-items:center;gap:14px;width:100%;
@@ -95,6 +99,8 @@ body::before{
 .link .go svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .link.primary{background-image:linear-gradient(100deg, rgba(255,61,154,.16), rgba(161,92,255,.05) 60%);border-color:rgba(255,61,154,.4)}
 .link.primary .ic{background:var(--signal)}
+.link.alt{background-image:linear-gradient(100deg, rgba(77,232,255,.14), rgba(161,92,255,.05) 60%);border-color:rgba(77,232,255,.4)}
+.link.alt .ic{background:var(--accent2);color:var(--ink)}
 
 .foot{margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--faint);font-size:12px;text-align:center}
 .foot b{color:var(--muted);font-weight:600}
@@ -113,17 +119,34 @@ body::before{
 
   <div class="head">
     <h1>ErbsenEintopf</h1>
-    <p>PC-Tweak-Tool f&uuml;r Windows: weniger Verzögerung, ein reaktionsschnelleres System. Backup, Optimierungen, Spiele-Profile &mdash; alles in einer EXE, ohne Konto und ohne Werbung.</p>
-    <div class="tagrow"><span class="tag">PC-Tweak</span><span class="tag">Kostenlos</span><span class="tag">Windows 10/11</span></div>
+    <p>Kostenlose Windows-Programme f&uuml;r Gamer &mdash; jeweils eine einzige EXE, ohne Konto und ohne Werbung.</p>
+    <div class="tagrow"><span class="tag">PC-Tweak</span><span class="tag">Crosshair</span><span class="tag">Kostenlos</span><span class="tag">Windows 10/11</span></div>
   </div>
 
   <nav class="links" aria-label="Links">
-    <a class="link primary" href="https://raw.githubusercontent.com/Legobausteine/erbseneintopf-utility-1.0/main/ErbsenEintopfUtility.exe">
+    <section class="cat">
+    <h2>PC-Tweak</h2>
+    <p class="note">PC-Tweak-Tool f&uuml;r Windows: weniger Verzögerung, ein reaktionsschnelleres System. Backup, Optimierungen, Spiele-Profile &mdash; alles in einer EXE.</p>
+    <a class="link primary" href="ErbsenEintopfUtility.exe" download>
       <span class="ic" style="--chip:var(--signal)"><svg viewBox="0 0 24 24"><path d="M12 3v13M7 11l5 5 5-5"/><path d="M4 18v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg></span>
       <span class="tx"><b>Jetzt herunterladen</b><span>Windows 10/11, EXE, kostenlos</span></span>
       <span class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
     </a>
+    </section>
 
+    <section class="cat">
+    <h2>Crosshair</h2>
+    <p class="note">Fadenkreuz-Overlay f&uuml;r Fortnite und andere Spiele: fertige Designs, eigener Designer, Hotkeys frei belegbar.</p>
+    <a class="link alt" href="Crosshair-Studio.exe" download>
+      <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg></span>
+      <span class="tx"><b>Crosshair Studio herunterladen</b><span>Windows 10/11, EXE, kostenlos</span></span>
+      <span class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+    </a>
+    <p class="note">Das Spiel muss im Modus &bdquo;Vollbild im Fenster&ldquo; laufen. Bei Turnieren vorher die Regeln pr&uuml;fen.</p>
+    </section>
+
+    <section class="cat">
+    <h2>Community</h2>
     <a class="link" href="https://www.tiktok.com/@erbseneinntopf" target="_blank" rel="noopener">
       <span class="ic" style="--chip:#111827"><svg class="filled" viewBox="0 0 24 24"><path d="M16.6 3h-3.2v12.2a2.9 2.9 0 1 1-2.1-2.8v-3.3a6.2 6.2 0 1 0 5.3 6.1V9.4a7.7 7.7 0 0 0 4.4 1.4V7.6a4.6 4.6 0 0 1-4.4-4.6z"/></svg></span>
       <span class="tx"><b>TikTok</b><span>Videos und Neuigkeiten</span></span>
@@ -141,10 +164,12 @@ body::before{
       <span class="tx"><b>Instagram</b><span>Bilder und Neuigkeiten</span></span>
       <span class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
     </a>
+    </section>
   </nav>
 
   <div class="foot">
-    <span><b>ErbsenEintopf Utility 1.0</b> &middot; privates Hobbyprojekt</span>
+    <span><b>ErbsenEintopf Utility 1.0</b> &middot; <b>Crosshair Studio</b> &middot; privates Hobbyprojekt</span>
+    <span>Windows kann bei neuen Programmen eine SmartScreen-Warnung zeigen: &bdquo;Weitere Informationen&ldquo; und dann &bdquo;Trotzdem ausf&uuml;hren&ldquo;.</span>
     <span>Nutzung auf eigene Gefahr, keine Garantie auf mehr FPS.</span>
     <span>Download und Installation erfolgen auf eigene Verantwortung. Wer die Datei herunterl&auml;dt und installiert, haftet selbst daf&uuml;r.</span>
   </div>
