@@ -13,9 +13,11 @@ das Spiel ein (kein Auslesen oder Verändern von Spieldaten).
 """
 import base64
 import ctypes
+import io
 import json
 import math
 import os
+import queue
 import random
 import sys
 import tkinter as tk
@@ -45,6 +47,16 @@ if IS_WIN:
     user32.SetWindowLongW.restype = ctypes.c_long
     user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
     user32.GetAsyncKeyState.restype = ctypes.c_short
+
+# Tray-Symbol (Hintergrund-Modus): braucht pystray + pillow, sonst wird nur minimiert
+HAVE_TRAY = False
+if IS_WIN:
+    try:
+        import pystray
+        from PIL import Image as PILImage
+        HAVE_TRAY = True
+    except Exception:
+        HAVE_TRAY = False
 
 GWL_EXSTYLE = -20
 WS_EX_TRANSPARENT = 0x00000020
@@ -112,6 +124,7 @@ DEFAULTS = {
     "key_toggle": "F8",
     "key_menu": "F9",
     "topmost": True,
+    "tray": True,  # Schließen = im Hintergrund weiterlaufen
     "saved": [],  # Favoriten
 }
 
@@ -659,12 +672,15 @@ class App:
         self.root.resizable(False, False)
         self.root.configure(bg=BG)
         self.root.attributes("-topmost", bool(self.cfg["topmost"]))
-        self.root.protocol("WM_DELETE_WINDOW", self.quit)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.logo_img = self._image(LOGO_44_B64)
         self.icon_img = self._image(ICON_64_B64)
         self.set_window_icon()
 
+        self.actions = queue.Queue()  # Befehle aus dem Tray-Symbol
+        self.tray = None
+        self.hint_shown = False
         self.user_visible = True
         self.overlay_shown = True
         self.panel_visible = True
@@ -687,6 +703,7 @@ class App:
         self.show_page("Fadenkreuz")
         self.set_tab("Empfohlen")
         self.changed(save=False)
+        self.start_tray()
         self.poll()
         self.keep_on_top()
         self.root.after(150, lambda: dark_titlebar(self.root))
@@ -753,6 +770,18 @@ class App:
 
     # ----------------------------------------------------------- Hotkeys
     def poll(self):
+        while True:
+            try:
+                act = self.actions.get_nowait()
+            except queue.Empty:
+                break
+            if act == "open":
+                self.show_panel()
+            elif act == "toggle":
+                self.toggle_visible()
+            elif act == "quit":
+                self.quit()
+                return
         k_toggle = key_down(KEYS[self.cfg["key_toggle"]])
         k_menu = key_down(KEYS[self.cfg["key_menu"]])
         if k_toggle and not self.prev.get("t"):
@@ -776,6 +805,50 @@ class App:
     def toggle_visible(self):
         self.user_visible = not self.user_visible
         self.draw_eye()
+
+    def start_tray(self):
+        """Tray-Symbol neben der Uhr anlegen (läuft in eigenem Thread)."""
+        if not HAVE_TRAY:
+            return
+        try:
+            img = PILImage.open(io.BytesIO(base64.b64decode(ICON_64_B64))).convert("RGBA")
+            menu = pystray.Menu(
+                pystray.MenuItem("Öffnen", lambda *_: self.actions.put("open"), default=True),
+                pystray.MenuItem("Fadenkreuz an/aus", lambda *_: self.actions.put("toggle")),
+                pystray.MenuItem("Beenden", lambda *_: self.actions.put("quit")))
+            self.tray = pystray.Icon("ErbsenEinntopfCrossair", img,
+                                     "ErbsenEinntopf Crossair", menu)
+            self.tray.run_detached()
+        except Exception:
+            self.tray = None
+
+    def show_panel(self):
+        self.panel_visible = True
+        self.root.deiconify()
+        self.root.state("normal")
+        self.root.lift()
+        try:
+            self.root.focus_force()
+        except Exception:
+            pass
+
+    def on_close(self):
+        """Fenster schließen: im Hintergrund weiterlaufen oder beenden."""
+        if not self.cfg["tray"]:
+            self.quit()
+        elif self.tray is not None:
+            self.panel_visible = False
+            self.root.withdraw()
+            if not self.hint_shown:
+                self.hint_shown = True
+                try:
+                    self.tray.notify("Läuft im Hintergrund weiter. Klick auf das Symbol "
+                                     "öffnet das Fenster, Rechtsklick > Beenden schließt es.",
+                                     "ErbsenEinntopf Crossair")
+                except Exception:
+                    pass
+        else:
+            self.root.iconify()  # ohne Tray-Symbol: in die Taskleiste minimieren
 
     def toggle_panel(self):
         self.panel_visible = not self.panel_visible
@@ -1222,6 +1295,7 @@ class App:
             self.root.attributes("-topmost", bool(v))
 
         self.row_toggle(page, "Fenster immer im Vordergrund", "topmost", set_top)
+        self.row_toggle(page, "Im Hintergrund weiterlaufen", "tray")
 
         def reset_all():
             for k, v in DEFAULTS.items():
@@ -1235,6 +1309,7 @@ class App:
             self.toast("Alle Einstellungen zurückgesetzt")
 
         make_button(page, "Alles zurücksetzen", reset_all).pack(anchor="w", pady=(16, 0))
+        make_button(page, "Programm beenden", self.quit).pack(anchor="w", pady=(10, 0))
         tk.Label(page, text="Gespeichert in: " + CONFIG_PATH, bg=BG, fg=FAINT,
                  font=F_SMALL, anchor="w").pack(fill="x", pady=(26, 0))
 
@@ -1247,6 +1322,10 @@ class App:
             "Das Overlay ist klick-durchlässig. Deine Mausklicks gehen direkt ins Spiel.",
             "Fadenkreuz an/aus: Standard F8. Menü ein-/ausblenden: Standard F9 "
             "(unter „Tastenbelegungen“ änderbar).",
+            "Wenn du das Fenster schließt, läuft das Fadenkreuz im Hintergrund weiter. "
+            "Das Symbol findest du unten rechts neben der Uhr (evtl. unter dem Pfeil ^): "
+            "Klick öffnet das Fenster, Rechtsklick > Beenden schließt das Programm. "
+            "Abschalten kannst du das unter „Einstellungen“.",
             "Favoriten: Klicke bei einem Design auf den Stern oder oben auf den Stern "
             "neben dem Auge. Alle Favoriten findest du im Tab „Favoriten“.",
             "Unter „Anzeigemodi“ kannst du das Fadenkreuz nur beim Zielen "
@@ -1315,11 +1394,41 @@ class App:
 
     def quit(self):
         save_config(self.cfg)
+        if self.tray is not None:
+            try:
+                self.tray.stop()
+            except Exception:
+                pass
         self.root.destroy()
 
     def run(self):
         self.root.mainloop()
 
 
+_MUTEX = None
+
+
+def already_running():
+    """True, wenn das Programm schon läuft (z. B. im Hintergrund)."""
+    global _MUTEX
+    if not IS_WIN:
+        return False
+    try:
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        k32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+        k32.CreateMutexW.restype = wintypes.HANDLE
+        _MUTEX = k32.CreateMutexW(None, False, "Local\\ErbsenEinntopfCrossair")
+        return ctypes.get_last_error() == 183  # ERROR_ALREADY_EXISTS
+    except Exception:
+        return False
+
+
 if __name__ == "__main__":
+    if already_running():
+        ctypes.windll.user32.MessageBoxW(
+            0, "ErbsenEinntopf Crossair läuft bereits im Hintergrund.\n\n"
+               "Öffne es über das Symbol unten rechts neben der Uhr "
+               "(eventuell unter dem Pfeil ^ bei den versteckten Symbolen).",
+            "ErbsenEinntopf Crossair", 0x40)
+        sys.exit(0)
     App().run()

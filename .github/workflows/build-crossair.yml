@@ -22,11 +22,12 @@ jobs:
           python-version: "3.12"
 
       - name: PyInstaller installieren
-        run: pip install pyinstaller
+        run: pip install pyinstaller pystray pillow
 
       - name: EXE bauen
         run: >
           pyinstaller --onefile --noconsole --clean
+          --hidden-import pystray._win32
           --icon crossair/icon.ico
           --add-data "crossair/icon.ico;."
           --name ErbsenEinntopf-Crossair
