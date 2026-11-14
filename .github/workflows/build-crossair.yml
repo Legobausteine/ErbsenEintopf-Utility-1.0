@@ -1,9 +1,14 @@
 name: Crossair-EXE bauen
 
-# Manuell starten: Reiter "Actions" > "Crossair-EXE bauen" > "Run workflow".
+# Startet automatisch, wenn sich der Quellcode in crossair/ ändert (oder manuell
+# über "Actions" > "Crossair-EXE bauen" > "Run workflow").
 # Die fertige EXE wird danach automatisch im Hauptordner des Repos abgelegt.
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "crossair/**"
+      - ".github/workflows/build-crossair.yml"
 
 permissions:
   contents: write
